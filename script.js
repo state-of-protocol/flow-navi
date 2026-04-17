@@ -1,23 +1,22 @@
 // ===============================================
 // script.js - Logik Utama Aplikasi Navigasi
+// (Menuju ke arah sistem offline seperti Organic Maps)
 // ===============================================
 
-// --- 1. KONFIGURASI (Ganti dengan cara yang lebih selamat untuk produksi) ---
-// *PENTING*: JANGAN DEDAHKAN API KEYS SECARA LANGSUNG DALAM KOD FRONTEND UNTUK PRODUKSI.
-// Gunakan server backend atau pemboleh ubah persekitaran yang selamat.
-const GOOGLE_MAPS_KEY = "MASUKKAN_API_KEY_MAPS_ANDA"; // Ganti dengan kunci API anda
-const GEMINI_API_KEY = "MASUKKAN_API_KEY_GEMINI_ANDA"; // Ganti dengan kunci API anda
+// --- 1. KONFIGURASI ---
+// Tiada API Keys untuk Google Maps atau Gemini lagi
+// Kita akan menggunakan data peta dan routing offline
+const OFFLINE_MAP_DATA_URL = 'path/to/your/offline-vector-tiles/{z}/{x}/{y}.pbf'; // Akan diganti dengan sumber data anda
+const OFFLINE_STYLE_URL = 'path/to/your/custom-map-style.json'; // Gaya peta untuk Maplibre GL JS
 
 // --- 2. PEMBOLEH UBAH GLOBAL ---
-let map;
-let directionsService;
-let directionsRenderer;
+let mapInstance; // Akan menyimpan instance Maplibre GL JS map
 let currentPosition = null; // [lat, lng]
-let destination = "";
-let currentSteps = [];
+let currentDestination = ""; // Alamat atau koordinat destinasi
+let currentRoute = []; // Array langkah-langkah laluan yang dihitung (offline)
 let currentStepIndex = 0;
-let navigationInterval = null; // Untuk clearInterval
-let geminiPromptPending = false; // Untuk mengelakkan spam Gemini API
+let navigationUpdateInterval = null; // Untuk clearInterval
+let isOfflineMode = false; // Status mod luar talian
 
 // --- 3. FUNGSI UTILITI ---
 
@@ -34,13 +33,14 @@ function getCurrentLocation() {
                 },
                 (error) => {
                     console.error("Gagal mendapatkan lokasi GPS:", error);
-                    reject(new Error("Gagal mendapatkan lokasi GPS."));
+                    // Fallback jika GPS gagal (contoh: gunakan lokasi terakhir yang diketahui atau default)
+                    reject(new Error("Gagal mendapatkan lokasi GPS. Pastikan ia diaktifkan."));
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         } else {
             console.error("Geolocation tidak disokong oleh browser ini.");
-            reject(new Error("Geolocation tidak disokong."));
+            reject(new Error("Geolocation tidak disokong oleh browser anda."));
         }
     });
 }
@@ -73,59 +73,88 @@ function toRadians(deg) {
     return deg * (Math.PI / 180);
 }
 
-// --- 4. INTERAKSI DENGAN API LUARAN ---
+// --- 4. INTERAKSI DENGAN ENJIN PETA & ROUTING OFFLINE (Tempat Implementasi Utama) ---
 
 /**
- * Mendapatkan arahan navigasi dari Google Maps Directions API.
- * @param {[number, number]} origin - Titik mula [lat, lng].
- * @param {string} destination - Destinasi (alamat atau nama tempat).
- * @returns {Promise<google.maps.DirectionsResult>} Resolves dengan objek DirectionsResult.
+ * [TEMPAT IMPLEMENTASI]
+ * Melakukan carian lokasi/alamat secara offline.
+ * Ini memerlukan indeks data POI/alamat anda sendiri.
+ * @param {string} query - Query carian.
+ * @returns {Promise<Array<{lat: number, lng: number, name: string}>>} Hasil carian.
  */
-async function getDirections(origin, destination) {
-    const request = {
-        origin: { lat: origin[0], lng: origin[1] },
-        destination: destination,
-        travelMode: google.maps.TravelMode.DRIVING
-    };
-
-    return new Promise((resolve, reject) => {
-        directionsService.route(request, (result, status) => {
-            if (status === google.maps.DirectionsStatus.OK) {
-                resolve(result);
-            } else {
-                reject(new Error(`Gagal mendapatkan arah: ${status}`));
-            }
-        });
+async function searchOfflineLocation(query) {
+    console.log(`[Carian Offline] Mencari: ${query}`);
+    // --- LOGIK CARIAN OFFLINE ANDA DI SINI ---
+    // Ini akan melibatkan:
+    // 1. Memuatkan indeks POI/alamat dari IndexedDB/local storage.
+    // 2. Melakukan pencarian fuzzy atau substring matching.
+    // 3. Mengembalikan senarai cadangan.
+    // Untuk prototaip, kita boleh kembalikan hasil dummy.
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const results = [
+                { lat: 3.1578, lng: 101.7119, name: "KLCC, Kuala Lumpur" },
+                { lat: 2.9774, lng: 101.5501, name: "Banting, Selangor" },
+                { lat: 3.14, lng: 101.69, name: `Lokasi Carian untuk '${query}'` }
+            ].filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
+            resolve(results);
+        }, 500);
     });
 }
 
 /**
- * Menghantar arahan ke Gemini AI untuk mendapatkan amaran navigasi ringkas.
- * @param {string} instruction - Arahan navigasi mentah.
- * @returns {Promise<string>} Resolves dengan amaran dari Gemini atau string lalai.
+ * [TEMPAT IMPLEMENTASI]
+ * Menghitung laluan secara offline.
+ * Ini memerlukan enjin routing offline anda (WebAssembly/JS) dan data graf.
+ * @param {[number, number]} origin - Titik mula [lat, lng].
+ * @param {[number, number]} destinationCoords - Titik destinasi [lat, lng].
+ * @returns {Promise<Array<{lat: number, lng: number, instruction: string}>>} Senarai langkah-langkah laluan.
  */
-async function getGeminiWarning(instruction) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const payload = {
-        contents: [{
-            parts: [{ text: `Berikan amaran navigasi ringkas dan santai (Bahasa Melayu) untuk arahan ini: ${instruction}` }]
-        }]
-    };
+async function calculateOfflineRoute(origin, destinationCoords) {
+    console.log(`[Routing Offline] Menghitung laluan dari ${origin} ke ${destinationCoords}`);
+    // --- LOGIK ROUTING OFFLINE ANDA DI SINI ---
+    // Ini akan melibatkan:
+    // 1. Memuatkan graf routing dari IndexedDB/local storage.
+    // 2. Menjalankan algoritma routing (Dijkstra, A*, dsb.) pada graf tersebut.
+    // 3. Mengembalikan senarai langkah-langkah navigasi.
+    // Untuk prototaip, kita boleh kembalikan laluan dummy.
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            if (origin && destinationCoords) {
+                const dummyRoute = [
+                    { lat: origin[0], lng: origin[1], instruction: "Mula perjalanan." },
+                    { lat: (origin[0] + destinationCoords[0]) / 2 + 0.005, lng: (origin[1] + destinationCoords[1]) / 2, instruction: "Terus lurus sejauh 500m." },
+                    { lat: (origin[0] + destinationCoords[0]) / 2 - 0.005, lng: (origin[1] + destinationCoords[1]) / 2 + 0.005, instruction: "Belok kiri di persimpangan utama." },
+                    { lat: destinationCoords[0], lng: destinationCoords[1], instruction: "Anda telah sampai ke destinasi." }
+                ];
+                resolve(dummyRoute);
+            } else {
+                reject(new Error("Titik mula atau destinasi tidak sah untuk routing offline."));
+            }
+        }, 1500); // Simulasi kelewatan pengiraan
+    });
+}
 
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
-    } catch (error) {
-        console.error("Ralat memanggil Gemini API:", error);
-        return `Sedia! ${instruction}`; // Fallback message
-    }
+/**
+ * [TEMPAT IMPLEMENTASI]
+ * Memuat turun data peta offline untuk kawasan tertentu.
+ * @param {string} areaIdentifier - Pengenal pasti kawasan (contoh: "Malaysia", "Kuala Lumpur").
+ * @returns {Promise<boolean>} Resolves true jika berjaya muat turun.
+ */
+async function downloadOfflineMapData(areaIdentifier) {
+    console.log(`[Data Offline] Memuat turun data peta untuk ${areaIdentifier}...`);
+    // --- LOGIK MUAT TURUN & PENYIMPANAN DATA OFFLINE ANDA DI SINI ---
+    // Ini akan melibatkan:
+    // 1. Membuat permintaan ke server anda untuk paket data OSM/vector tiles/routing graph.
+    // 2. Menyimpan data tersebut ke IndexedDB atau Cache API.
+    // Ini adalah operasi yang sangat kompleks dan memerlukan backend.
+    return new Promise(resolve => {
+        setTimeout(() => {
+            console.log(`[Data Offline] Data untuk ${areaIdentifier} berjaya dimuat turun (simulasi).`);
+            alert(`Peta untuk ${areaIdentifier} telah berjaya dimuat turun (simulasi)!`);
+            resolve(true);
+        }, 3000); // Simulasi kelewatan muat turun
+    });
 }
 
 // --- 5. FUNGSI KEMAS KINI UI ---
@@ -134,48 +163,62 @@ async function getGeminiWarning(instruction) {
  * Mengemas kini paparan jarak dan arahan pada UI.
  * @param {number} distance - Jarak baki ke titik akhir langkah semasa.
  * @param {string} instruction - Arahan navigasi untuk langkah semasa.
- * @param {string} geminiMessage - Mesej tambahan dari Gemini (jika ada).
  */
-function updateUI(distance, instruction, geminiMessage = "") {
+function updateUI(distance, instruction) {
     const distanceEl = document.getElementById('distance-display');
     const instructionEl = document.getElementById('instruction-display');
-    const geminiEl = document.getElementById('gemini-message'); // Jika anda ingin paparkan mesej Gemini
-    const statusBarEl = document.getElementById('status-bar'); // Bar status berwarna
-    const arrowEl = document.getElementById('navigation-arrow'); // Anak panah
+    const statusBarEl = document.getElementById('status-bar');
+    const arrowEl = document.getElementById('navigation-arrow');
 
     if (distanceEl) distanceEl.textContent = `${Math.round(distance)} m lagi`;
-    if (instructionEl) instructionEl.textContent = `• ${instruction.replace(/<[^>]*>?/gm, '')}`; // Buang tag HTML
-
-    // Paparkan mesej Gemini jika ada
-    if (geminiEl) {
-        geminiEl.textContent = geminiMessage;
-        geminiEl.style.display = geminiMessage ? 'block' : 'none'; // Tunjuk/sembunyi
-    }
+    if (instructionEl) instructionEl.textContent = `• ${instruction}`;
 
     // Kemas kini warna status bar
     if (statusBarEl) {
-        statusBarEl.classList.remove('status-green', 'status-yellow', 'status-red'); // Buang semua kelas sedia ada
-        if (distance <= 50) { // Sangat dekat, mungkin perlu berhenti atau persimpangan kompleks
-            statusBarEl.classList.add('status-red'); // Contoh untuk "berhenti / sangat dekat"
-        } else if (distance <= 300) { // Hati-hati, sudah dekat dengan belokan
+        statusBarEl.classList.remove('status-green', 'status-yellow', 'status-red');
+        if (distance <= 50) {
+            statusBarEl.classList.add('status-red');
+        } else if (distance <= 300) {
             statusBarEl.classList.add('status-yellow');
-        } else { // Jalan biasa, jarak masih jauh
+        } else {
             statusBarEl.classList.add('status-green');
         }
     }
 
-    // Anda mungkin perlu logik yang lebih kompleks untuk putaran anak panah berdasarkan 'maneuver' Google Maps
-    // Buat masa ini, kita biarkan ia tunjuk ke hadapan atau mengikut belokan
+    // Kemas kini anak panah - perlu logik yang lebih kompleks untuk orientasi sebenar
+    // Untuk permulaan, kita boleh tetapkan secara manual atau berdasarkan perkataan kunci
     if (arrowEl) {
-        // Contoh: Set kelas CSS untuk rotasi. Anda perlu CSS yang sesuai.
-        // arrowEl.classList.remove('arrow-straight', 'arrow-left', 'arrow-right');
-        // if (instruction.includes("left")) {
-        //     arrowEl.classList.add('arrow-left');
-        // } else if (instruction.includes("right")) {
-        //     arrowEl.classList.add('arrow-right');
-        // } else {
-        //     arrowEl.classList.add('arrow-straight');
-        // }
+        // Ini adalah dummy, perlu logika yang mengaitkan dengan arah belok yang tepat
+        arrowEl.classList.remove('arrow-straight', 'arrow-left', 'arrow-right');
+        if (instruction.toLowerCase().includes("kiri")) {
+            arrowEl.classList.add('arrow-left');
+        } else if (instruction.toLowerCase().includes("kanan")) {
+            arrowEl.classList.add('arrow-right');
+        } else {
+            arrowEl.classList.add('arrow-straight');
+        }
+    }
+}
+
+/**
+ * Menampilkan atau menyembunyikan mesej AI Gemini (kini hanya mesej navigasi generik)
+ * @param {string} message - Mesej untuk dipaparkan. Kosongkan untuk menyembunyikan.
+ */
+function displayGeminiMessage(message) {
+    const geminiEl = document.getElementById('gemini-message');
+    const geminiTextEl = geminiEl.querySelector('p'); // Anggap teks dalam tag p
+
+    if (geminiEl && geminiTextEl) {
+        if (message) {
+            geminiTextEl.textContent = message;
+            geminiEl.style.display = 'flex'; // Paparkan sebagai flex
+            // Setelah beberapa saat, sembunyikan secara automatik
+            setTimeout(() => {
+                geminiEl.style.display = 'none';
+            }, 5000); // Sembunyi selepas 5 saat
+        } else {
+            geminiEl.style.display = 'none';
+        }
     }
 }
 
@@ -183,15 +226,20 @@ function updateUI(distance, instruction, geminiMessage = "") {
  * Menghentikan navigasi dan membersihkan UI.
  */
 function stopNavigation() {
-    if (navigationInterval) {
-        clearInterval(navigationInterval);
-        navigationInterval = null;
+    if (navigationUpdateInterval) {
+        clearInterval(navigationUpdateInterval);
+        navigationUpdateInterval = null;
     }
-    currentSteps = [];
+    currentRoute = [];
     currentStepIndex = 0;
     currentPosition = null;
-    directionsRenderer.setDirections({ routes: [] }); // Kosongkan paparan laluan
-    updateUI(0, "Navigasi Tamat.", ""); // Kemas kini UI ke keadaan tamat
+    currentDestination = "";
+    // Hentikan rendering laluan pada peta (perlu diimplementasi untuk Maplibre)
+    // mapInstance.removeLayer('route-line');
+    // mapInstance.removeSource('route-line');
+    
+    updateUI(0, "Navigasi Tamat.");
+    displayGeminiMessage(""); // Kosongkan mesej
     const statusBarEl = document.getElementById('status-bar');
     if (statusBarEl) {
         statusBarEl.classList.remove('status-green', 'status-yellow', 'status-red');
@@ -204,69 +252,122 @@ function stopNavigation() {
 
 /**
  * Memulakan proses navigasi sebenar.
+ * Ini akan menggunakan enjin routing offline.
  */
 async function startNavigation() {
     stopNavigation(); // Hentikan navigasi sebelumnya jika ada
-    geminiPromptPending = false; // Reset status Gemini
-
+    
+    // 1. Dapatkan lokasi semasa
     try {
         currentPosition = await getCurrentLocation();
         console.log("Lokasi Semasa:", currentPosition);
+    } catch (err) {
+        alert(err.message);
+        return;
+    }
 
-        const directionsResult = await getDirections(currentPosition, destination);
-        console.log("Arah Diterima:", directionsResult);
+    // 2. Dapatkan koordinat destinasi dari input carian (perlu diselesaikan dengan carian offline)
+    // Untuk demo, kita akan gunakan destinasi dummy
+    let destinationCoords = null;
+    if (currentDestination === "KLCC") {
+        destinationCoords = [3.1578, 101.7119];
+    } else if (currentDestination === "Banting") {
+        destinationCoords = [2.9774, 101.5501];
+    } else {
+        // Carian offline akan mengembalikan koordinat sebenar
+        const searchResults = await searchOfflineLocation(currentDestination);
+        if (searchResults.length > 0) {
+            destinationCoords = [searchResults[0].lat, searchResults[0].lng];
+            console.log("Destinasi Carian:", searchResults[0].name, destinationCoords);
+            displayGeminiMessage(`Mula navigasi ke ${searchResults[0].name}!`);
+        } else {
+            alert(`Destinasi '${currentDestination}' tidak dijumpai secara offline.`);
+            return;
+        }
+    }
+    
+    if (!destinationCoords) {
+        alert("Destinasi tidak valid.");
+        return;
+    }
 
-        // Paparkan laluan pada peta
-        directionsRenderer.setDirections(directionsResult);
-
-        currentSteps = directionsResult.routes[0].legs[0].steps;
+    // 3. Kira laluan secara offline
+    try {
+        currentRoute = await calculateOfflineRoute(currentPosition, destinationCoords);
         currentStepIndex = 0;
-        console.log(`Laluan dijumpai! Ada ${currentSteps.length} langkah.`);
+        console.log(`Laluan dijumpai! Ada ${currentRoute.length} langkah.`);
+        displayGeminiMessage(`Laluan dikira. Mari kita bergerak!`);
+
+        // [TEMPAT IMPLEMENTASI]
+        // Paparkan laluan pada peta menggunakan Maplibre GL JS
+        // Contoh:
+        // mapInstance.addSource('route-line', {
+        //     'type': 'geojson',
+        //     'data': {
+        //         'type': 'Feature',
+        //         'properties': {},
+        //         'geometry': {
+        //             'type': 'LineString',
+        //             'coordinates': currentRoute.map(step => [step.lng, step.lat])
+        //         }
+        //     }
+        // });
+        // mapInstance.addLayer({
+        //     'id': 'route-line',
+        //     'type': 'line',
+        //     'source': 'route-line',
+        //     'layout': {
+        //         'line-join': 'round',
+        //         'line-cap': 'round'
+        //     },
+        //     'paint': {
+        //         'line-color': '#00FFFF',
+        //         'line-width': 6
+        //     }
+        // });
+
 
         // Mulakan loop navigasi
-        navigationInterval = setInterval(async () => {
-            if (currentStepIndex >= currentSteps.length) {
+        navigationUpdateInterval = setInterval(async () => {
+            if (currentStepIndex >= currentRoute.length) {
                 alert("Anda telah sampai ke destinasi!");
                 stopNavigation();
                 return;
             }
 
-            const step = currentSteps[currentStepIndex];
-            const targetLat = step.end_location.lat();
-            const targetLng = step.end_location.lng();
+            const step = currentRoute[currentStepIndex];
+            const targetLat = step.lat;
+            const targetLng = step.lng;
 
             try {
                 currentPosition = await getCurrentLocation(); // Update lokasi secara real-time
                 const dist = haversine(currentPosition[0], currentPosition[1], targetLat, targetLng);
-                let geminiMsg = "";
-
-                // Trigger Gemini jika jarak semakin dekat dan belum dipicu untuk langkah ini
-                if (dist < 300 && !geminiPromptPending) {
-                    geminiPromptPending = true; // Elak memicu berkali-kali
-                    console.log("Memicu Gemini untuk amaran...");
-                    geminiMsg = await getGeminiWarning(step.html_instructions);
-                    console.log("[GEMINI BERKATA]:", geminiMsg);
-                    // Paparkan mesej Gemini serta-merta
-                    updateUI(dist, step.html_instructions, geminiMsg);
-                } else {
-                    updateUI(dist, step.html_instructions);
-                }
-
+                
+                updateUI(dist, step.instruction);
+                
+                // [TEMPAT IMPLEMENTASI]
+                // Kemas kini penanda lokasi pengguna pada peta Maplibre GL JS
+                // mapInstance.getSource('user-location').setData({
+                //    'type': 'Feature',
+                //    'geometry': {
+                //        'type': 'Point',
+                //        'coordinates': [currentPosition[1], currentPosition[0]]
+                //    }
+                // });
+                // mapInstance.panTo([currentPosition[1], currentPosition[0]]); // Ikuti pengguna
 
                 // Jika sudah sampai ke simpang ini (radius 30m)
                 if (dist < 30) {
-                    console.log(`Simpang selesai: ${step.html_instructions}`);
+                    console.log(`Langkah selesai: ${step.instruction}`);
                     currentStepIndex++;
-                    geminiPromptPending = false; // Reset untuk langkah seterusnya
-                    if (currentStepIndex < currentSteps.length) {
-                        // Clear Gemini message as we move to the next step
-                        updateUI(dist, currentSteps[currentStepIndex].html_instructions, "");
+                    if (currentStepIndex < currentRoute.length) {
+                        displayGeminiMessage(`Langkah seterusnya: ${currentRoute[currentStepIndex].instruction}`);
                     }
                 }
 
             } catch (err) {
                 console.error("Ralat dalam loop navigasi:", err);
-                // Mungkin cuba dapatkan lokasi semula atau paparkan ralat kepada pengguna
+                displayGeminiMessage(`Ralat navigasi: ${err.message}`);
             }
         }, 2000); // Refresh setiap 2 saat
     } catch (err) {
@@ -277,46 +378,109 @@ async function startNavigation() {
 }
 
 
-// --- 7. INICIALISASI PETA GOOGLE (Dipanggil oleh API Maps) ---
+// --- 7. INICIALISASI PETA & EVENT LISTENERS ---
 
-function initMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 3.14, lng: 101.69 }, // Pusat KL sebagai default
+/**
+ * [TEMPAT IMPLEMENTASI]
+ * Fungsi inisialisasi peta utama.
+ * Akan menggantikan Google Maps initMap dengan Maplibre GL JS.
+ */
+function initOfflineMap() {
+    console.log("Menginisialisasi peta offline dengan Maplibre GL JS...");
+    
+    // Pastikan Maplibre GL JS dimuatkan (perlu tambah script tag di index.html)
+    if (typeof maplibregl === 'undefined') {
+        console.error("Maplibre GL JS tidak dimuatkan. Sila pastikan script tagnya ada di index.html.");
+        return;
+    }
+
+    mapInstance = new maplibregl.Map({
+        container: 'map', // ID elemen HTML untuk peta
+        style: OFFLINE_STYLE_URL, // URL ke gaya peta anda (akan menjana dari vector tiles)
+        center: [101.69, 3.14], // Longitude, Latitude - Pusat KL sebagai default
         zoom: 15,
-        mapTypeId: "roadmap",
-        disableDefaultUI: true // Opsional: untuk UI yang lebih bersih
+        attributionControl: false // Sembunyikan atribusi lalai jika tidak mahu
     });
 
-    directionsService = new google.maps.DirectionsService();
-    directionsRenderer = new google.maps.DirectionsRenderer({
-        map: map,
-        suppressMarkers: true, // Tidak menunjukkan penanda lalai Google
-        polylineOptions: {
-            strokeColor: '#00FFFF', // Warna laluan (cyan)
-            strokeOpacity: 0.8,
-            strokeWeight: 6
+    mapInstance.on('load', () => {
+        console.log("Peta Maplibre GL JS dimuatkan.");
+        // [TEMPAT IMPLEMENTASI]
+        // Tambah sumber dan layer untuk lokasi pengguna
+        // mapInstance.addSource('user-location', {
+        //     'type': 'geojson',
+        //     'data': {
+        //         'type': 'FeatureCollection',
+        //         'features': []
+        //     }
+        // });
+        // mapInstance.addLayer({
+        //     'id': 'user-location-layer',
+        //     'type': 'circle',
+        //     'source': 'user-location',
+        //     'paint': {
+        //         'circle-radius': 8,
+        //         'circle-color': '#00A8FF',
+        //         'circle-stroke-color': '#FFFFFF',
+        //         'circle-stroke-width': 2
+        //     }
+        // });
+    });
+
+    // Menambah event listener untuk butang tutup mesej Gemini
+    document.querySelector('.close-gemini').addEventListener('click', () => {
+        displayGeminiMessage(""); // Sembunyikan mesej
+    });
+
+    // Menambah event listener untuk input carian
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value;
+            if (query) {
+                const results = await searchOfflineLocation(query);
+                if (results.length > 0) {
+                    currentDestination = results[0].name; // Set destinasi yang dipilih
+                    // Gerakkan peta ke lokasi carian pertama
+                    mapInstance.flyTo({
+                        center: [results[0].lng, results[0].lat],
+                        zoom: 15
+                    });
+                    displayGeminiMessage(`Mencari laluan ke ${results[0].name}...`);
+                    startNavigation(); // Mula navigasi ke lokasi yang dicari
+                } else {
+                    alert(`Tiada hasil carian untuk '${query}' secara offline.`);
+                }
+            } else {
+                alert("Sila masukkan lokasi untuk carian.");
+            }
         }
     });
 
-    console.log("Google Map diinisialisasi.");
+    // Event listener untuk butang "Muat Dorn Laluan Ini"
+    document.getElementById('download-route-button').addEventListener('click', () => {
+        // Untuk demo, kita boleh muat turun data peta untuk kawasan "Kuala Lumpur"
+        downloadOfflineMapData("Kuala Lumpur");
+    });
 
-    // Tambahkan event listener untuk input destinasi
-    const destinationInput = document.getElementById('destination-input');
-    const startNavButton = document.getElementById('start-nav-button');
+    // Event listener untuk butang "Kira Semula Laluan"
+    document.getElementById('recalculate-route-button').addEventListener('click', () => {
+        if (currentPosition && currentDestination) {
+            displayGeminiMessage("Mengira semula laluan...");
+            startNavigation(); // Kira semula laluan dari lokasi semasa ke destinasi asal
+        } else {
+            alert("Tiada navigasi aktif untuk dikira semula.");
+        }
+    });
 
-    if (destinationInput && startNavButton) {
-        startNavButton.addEventListener('click', () => {
-            destination = destinationInput.value;
-            if (destination) {
-                startNavigation();
-            } else {
-                alert("Sila masukkan destinasi.");
-            }
-        });
-    } else {
-        console.error("Elemen input destinasi atau butang mula navigasi tidak dijumpai.");
-    }
+    // Event listener untuk toggle mod luar talian
+    document.getElementById('offline-mode-checkbox').addEventListener('change', (event) => {
+        isOfflineMode = event.target.checked;
+        console.log(`Mod Luar Talian: ${isOfflineMode ? 'Aktif' : 'Tidak Aktif'}`);
+        displayGeminiMessage(`Mod Luar Talian ${isOfflineMode ? 'diaktifkan' : 'dimatikan'}.`);
+        // Anda boleh menambah logik di sini untuk menukar sumber peta
+        // Contoh: mapInstance.setStyle(isOfflineMode ? OFFLINE_STYLE_URL : ONLINE_STYLE_URL);
+    });
 }
 
-// Global hook for Google Maps API callback
-window.initMap = initMap;
+// Panggil inisialisasi peta offline apabila DOM sedia
+document.addEventListener('DOMContentLoaded', initOfflineMap);
