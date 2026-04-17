@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ms"> <!-- Tetapkan bahasa kepada Melayu -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigasi Pintar AI</title>
+
+    <!-- Pautan ke fail CSS kita -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Pautan ke Google Fonts (Poppins) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Ikon Favicon (Pilihan) -->
+    <!-- <link rel="icon" href="favicon.ico" type="image/x-icon"> -->
+</head>
+<body>
+    <!-- Container utama aplikasi, akan mengisi seluruh viewport -->
+    <div id="app-container">
+
+        <!-- Bahagian Input Destinasi di bahagian atas skrin -->
+        <div class="input-section">
+            <input type="text" id="destination-input" placeholder="Masukkan destinasi (cth: KLCC atau Banting)">
+            <button id="start-nav-button">Mula Navigasi</button>
+        </div>
+
+        <!-- Peta Google Maps, yang akan menjadi latar belakang visual -->
+        <div id="map"></div>
+
+        <!-- Antaramuka Navigasi Utama, di atas peta -->
+        <div class="navigation-ui">
+            <!-- Ikon Anak Panah (pastikan 'arrow-up.svg' wujud dalam folder yang sama) -->
+            <img src="arrow-up.svg" id="navigation-arrow" alt="Arah Navigasi" class="arrow-straight">
+
+            <!-- Paparan Informasi Jarak dan Arahan -->
+            <div class="info-display">
+                <div id="distance-display">-- m lagi</div> <!-- Jarak baki -->
+                <div id="instruction-display">• Sedia untuk navigasi...</div> <!-- Arahan semasa -->
+                <div id="gemini-message" class="gemini-hint"></div> <!-- Mesej dari Gemini AI -->
+            </div>
+
+            <!-- Bar Status Berwarna di bahagian bawah -->
+            <div id="status-bar" class="status-bar-base status-green"></div>
+        </div>
+    </div>
+
+    <!-- MUATKAN GOOGLE MAPS JAVASCRIPT API -->
+    <!-- Gantikan 'YOUR_GOOGLE_MAPS_KEY' dengan kunci API anda yang sebenar -->
+    <!-- Parameter 'callback=initMap' akan memanggil fungsi initMap dalam script.js setelah API dimuatkan -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY&callback=initMap"></script>
+
+    <!-- Pautan ke fail JavaScript kita -->
+    <script src="script.js"></script>
+</body>
+</html>
