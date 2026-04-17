@@ -3,85 +3,114 @@
    =============================================== */
 
 /* --- Umum / Reset --- */
+:root {
+    /* Define CSS variables for easier theming/adjustments */
+    --color-primary-dark: #1A1A2E;
+    --color-secondary-dark: #2E2E4A;
+    --color-tertiary-dark: #3F3F5A;
+    --color-text-light: #E0E0E0;
+    --color-placeholder: #A0A0B0;
+    --color-accent-cyan: #00FFFF;
+    --color-accent-blue: #00A8FF;
+    --color-gemini-yellow: #FFD700;
+    --color-status-green: #28a745;
+    --color-status-yellow: #ffc107;
+    --color-status-red: #dc3545;
+
+    /* Responsive font sizes (base) */
+    --font-size-base: 1rem; /* 16px */
+    --font-size-lg: 1.15rem;
+    --font-size-xl: 1.6rem;
+    --font-size-xxl: 2.5rem;
+    --font-size-xxxl: 4.5rem;
+}
+
 body {
     margin: 0;
-    font-family: 'Poppins', sans-serif; /* Font bersih dan moden */
-    background-color: #1A1A2E; /* Latar belakang mod gelap utama */
-    color: #E0E0E0; /* Warna teks terang */
-    overflow: hidden; /* Elakkan scrollbar yang tidak diingini */
-    -webkit-font-smoothing: antialiased; /* Kelancaran font untuk WebKit */
-    -moz-osx-font-smoothing: grayscale; /* Kelancaran font untuk Firefox */
-    display: flex; /* Guna flexbox untuk mengisi skrin */
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--color-primary-dark);
+    color: var(--color-text-light);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: 100vh; /* Pastikan ia mengisi ketinggian viewport */
+    align-items: flex-start; /* Align at the start to allow space for input */
+    min-height: 100vh;
+    /* Fallback for mobile height issues */
+    min-height: -webkit-fill-available; 
 }
 
 /* Container utama aplikasi */
 #app-container {
     width: 100%;
-    max-width: 500px; /* Bataskan lebar untuk kesan 'mobile app' */
-    height: 100vh; /* Penuh ketinggian */
+    /* max-width is good for desktop, but for mobile we want it to fill */
+    max-width: 500px; /* Max width for wider screens */
+    height: 100vh;
+    height: -webkit-fill-available; /* For better mobile height handling */
     position: relative;
-    background-color: #1A1A2E; /* Pastikan latar belakang seragam */
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1); /* Kesan glow halus untuk keseluruhan app */
-    overflow: hidden; /* Penting untuk mengurus elemen dalam */
+    background-color: var(--color-primary-dark);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+    overflow: hidden;
+    display: flex; /* Use flex to manage inner sections */
+    flex-direction: column;
 }
 
 /* --- Input Section (Bahagian Atas) --- */
 .input-section {
-    position: relative; /* Penting untuk z-index */
-    padding: 15px;
-    background-color: #2E2E4A; /* Warna latar belakang sedikit cerah dari body */
+    position: relative;
+    padding: clamp(10px, 4vw, 15px); /* Responsive padding */
+    background-color: var(--color-secondary-dark);
     display: flex;
-    gap: 10px;
-    border-bottom-left-radius: 15px; /* Bucu bulat lembut */
-    border-bottom-right-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5); /* Shadow lebih kuat */
-    z-index: 100; /* Pastikan di atas semua */
+    gap: clamp(8px, 2vw, 10px); /* Responsive gap */
+    border-bottom-left-radius: clamp(10px, 4vw, 15px);
+    border-bottom-right-radius: clamp(10px, 4vw, 15px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    z-index: 100;
     width: 100%;
-    box-sizing: border-box; /* Pastikan padding tidak menambah lebar */
+    box-sizing: border-box;
+    flex-shrink: 0; /* Prevent it from shrinking */
 }
 
 #destination-input {
     flex-grow: 1;
-    padding: 12px 18px;
-    border: 1px solid #4F4F7A; /* Border lembut */
-    border-radius: 10px;
-    background-color: #3F3F5A;
-    color: #E0E0E0;
-    font-size: 1.05rem;
-    outline: none; /* Buang outline default */
-    transition: all 0.3s ease; /* Transisi untuk fokus */
+    padding: clamp(10px, 3vw, 12px) clamp(15px, 4vw, 18px); /* Responsive padding */
+    border: 1px solid var(--color-tertiary-dark);
+    border-radius: clamp(8px, 3vw, 10px);
+    background-color: var(--color-tertiary-dark);
+    color: var(--color-text-light);
+    font-size: var(--font-size-lg); /* Use defined font size */
+    outline: none;
+    transition: all 0.3s ease;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
 #destination-input::placeholder {
-    color: #A0A0B0;
+    color: var(--color-placeholder);
     opacity: 0.8;
 }
 
 #destination-input:focus {
-    border-color: #00FFFF; /* Glow border apabila fokus */
+    border-color: var(--color-accent-cyan);
     box-shadow: inset 0 1px 5px rgba(0,0,0,0.5), 0 0 10px rgba(0,255,255,0.4);
 }
 
 #start-nav-button {
-    padding: 12px 25px;
+    padding: clamp(10px, 3vw, 12px) clamp(15px, 5vw, 25px); /* Responsive padding */
     border: none;
-    border-radius: 10px;
-    background-color: #00A8FF; /* Warna biru-cyan yang menarik */
+    border-radius: clamp(8px, 3vw, 10px);
+    background-color: var(--color-accent-blue);
     color: white;
-    font-size: 1.05rem;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0,168,255,0.4); /* Glow butang */
+    box-shadow: 0 4px 15px rgba(0,168,255,0.4);
 }
 
 #start-nav-button:hover {
-    background-color: #0088CC; /* Warna lebih gelap apabila hover */
-    transform: translateY(-2px); /* Kesan 'angkat' */
+    background-color: #0088CC;
+    transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,168,255,0.6);
 }
 
@@ -93,140 +122,235 @@ body {
 /* --- Peta Google Maps --- */
 #map {
     width: 100%;
-    height: 100%; /* Penuhkan ruang yang tersedia */
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1; /* Di bawah UI utama */
-    filter: brightness(0.7) contrast(1.1); /* Jadikan lebih gelap dan kontras */
+    /* Map should fill the remaining space below input section */
+    flex-grow: 1; 
+    position: relative; /* Changed from absolute to relative to be part of flex flow */
+    z-index: 1;
+    filter: brightness(0.7) contrast(1.1);
     transition: filter 0.5s ease;
 }
 
 /* --- Antaramuka Navigasi Utama (Overlay) --- */
 .navigation-ui {
-    position: absolute;
+    position: absolute; /* Keep absolute for overlaying map */
     bottom: 0;
     left: 0;
     width: 100%;
-    height: calc(100% - 80px); /* Adjust height based on input section */
-    /* Gradient yang lebih halus, meliputi hampir keseluruhan skrin */
-    background: linear-gradient(to top, #1A1A2E 70%, rgba(26,26,46,0.0) 100%);
+    /* Calculate height from bottom, relative to app-container height */
+    height: 80%; /* Adjust as needed, e.g., 80% to cover most of the map */
+    background: linear-gradient(to top, var(--color-primary-dark) 70%, rgba(26,26,46,0.0) 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end; /* Letak kandungan ke bawah */
-    padding-bottom: 30px; /* Padding dari bawah skrin */
-    z-index: 50; /* Di atas peta */
+    justify-content: flex-end;
+    padding-bottom: clamp(20px, 6vh, 30px); /* Responsive padding-bottom */
+    z-index: 50;
     box-sizing: border-box;
-    pointer-events: none; /* Benarkan klik melalui ke peta jika tiada elemen boleh diklik */
+    pointer-events: none;
 }
 
 /* --- Anak Panah Navigasi --- */
 #navigation-arrow {
-    width: 90px;
-    height: 90px;
+    width: clamp(70px, 18vw, 90px); /* Responsive width */
+    height: clamp(70px, 18vw, 90px); /* Responsive height */
     position: absolute;
-    top: 15%; /* Jarak relatif dari atas .navigation-ui */
+    top: clamp(10px, 5vh, 15%); /* Responsive top position */
     left: 50%;
-    transform: translateX(-50%) rotate(0deg); /* Transformasi asas */
-    filter: drop-shadow(0 0 15px #00FFFF); /* Kesan glow neon */
-    transition: transform 0.3s ease-out, filter 0.3s ease; /* Transisi untuk rotasi dan glow */
-    pointer-events: none; /* Pastikan ia tidak menghalang klik */
-    fill: #00FFFF; /* Jika ia SVG dan anda mahu mengawal warnanya */
+    transform: translateX(-50%) rotate(0deg);
+    filter: drop-shadow(0 0 15px var(--color-accent-cyan));
+    transition: transform 0.3s ease-out, filter 0.3s ease;
+    pointer-events: none;
+    fill: var(--color-accent-cyan);
 }
 
-/* Kelas untuk rotasi anak panah (gunakan SVG ikon anak panah) */
 .arrow-straight { transform: translateX(-50%) rotate(0deg); }
 .arrow-left { transform: translateX(-50%) rotate(-45deg); }
 .arrow-right { transform: translateX(-50%) rotate(45deg); }
-/* Tambah lebih banyak kelas jika perlu untuk belokan tajam dll. */
-
 
 /* --- Paparan Informasi (Jarak, Arahan) --- */
 .info-display {
     text-align: center;
-    margin-bottom: 25px;
-    padding: 0 20px;
-    pointer-events: none; /* Pastikan ia tidak menghalang klik */
+    margin-bottom: clamp(20px, 5vh, 25px); /* Responsive margin */
+    padding: 0 clamp(15px, 5vw, 20px);
+    pointer-events: none;
 }
 
 #distance-display {
-    font-size: 4.5rem; /* Saiz teks yang sangat besar */
+    font-size: clamp(3.5rem, 10vw, var(--font-size-xxxl)); /* Highly responsive font size */
     font-weight: 700;
-    color: #00FFFF; /* Warna utama untuk jarak (cyan) */
-    margin-bottom: 8px;
-    text-shadow: 0 0 15px rgba(0,255,255,0.7); /* Glow neon yang lebih kuat */
-    line-height: 1.1; /* Jarak baris */
+    color: var(--color-accent-cyan);
+    margin-bottom: clamp(5px, 1.5vh, 8px);
+    text-shadow: 0 0 15px rgba(0,255,255,0.7);
+    line-height: 1.1;
 }
 
 #instruction-display {
-    font-size: 1.6rem;
-    color: #A0A0B0;
-    margin-bottom: 20px;
+    font-size: clamp(1.3rem, 4vw, var(--font-size-xl)); /* Highly responsive font size */
+    color: var(--color-placeholder);
+    margin-bottom: clamp(15px, 4vh, 20px);
     line-height: 1.3;
 }
 
 /* --- Mesej Gemini AI --- */
 #gemini-message {
-    font-size: 1.15rem;
-    color: #FFD700; /* Emas/kuning untuk amaran Gemini */
-    background-color: rgba(63, 63, 90, 0.8); /* Latar belakang separa lutsinar */
-    padding: 12px 20px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-    display: none; /* Sembunyikan secara default oleh JS */
-    box-shadow: 0 0 12px rgba(255,215,0,0.5); /* Glow kuning */
-    max-width: 80%; /* Bataskan lebar */
+    font-size: clamp(1rem, 3.5vw, var(--font-size-lg)); /* Highly responsive font size */
+    color: var(--color-gemini-yellow);
+    background-color: rgba(63, 63, 90, 0.8);
+    padding: clamp(10px, 3vw, 12px) clamp(15px, 5vw, 20px);
+    border-radius: clamp(8px, 3vw, 12px);
+    margin-bottom: clamp(20px, 5vh, 25px);
+    display: none;
+    box-shadow: 0 0 12px rgba(255,215,0,0.5);
+    max-width: 90%; /* Allow more width on smaller screens */
     text-align: center;
-    pointer-events: none; /* Pastikan ia tidak menghalang klik */
+    pointer-events: none;
 }
 
 /* --- Bar Status Berwarna (Penunjuk) --- */
 .status-bar-base {
-    width: 95%; /* Hampir penuh lebar skrin */
-    height: 15px; /* Ketinggian bar */
-    border-radius: 8px; /* Bucu bulat lembut */
-    transition: background-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out; /* Transisi yang licin */
-    margin-bottom: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4); /* Shadow asas */
-    pointer-events: none; /* Pastikan ia tidak menghalang klik */
+    width: 95%;
+    height: clamp(10px, 3vw, 15px); /* Responsive height */
+    border-radius: clamp(5px, 2vw, 8px);
+    transition: background-color 0.6s ease-in-out, box-shadow 0.6s ease-in-out;
+    margin-bottom: clamp(10px, 2vh, 15px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    pointer-events: none;
 }
 
 .status-green {
-    background: linear-gradient(90deg, #28a745 0%, #218838 100%); /* Gradient untuk kesan lebih baik */
-    box-shadow: 0 0 20px rgba(40,167,69,0.7); /* Glow hijau yang kuat */
+    background: linear-gradient(90deg, var(--color-status-green) 0%, #218838 100%);
+    box-shadow: 0 0 20px rgba(40,167,69,0.7);
 }
 
 .status-yellow {
-    background: linear-gradient(90deg, #ffc107 0%, #e0a800 100%);
-    box-shadow: 0 0 20px rgba(255,193,7,0.7); /* Glow kuning */
+    background: linear-gradient(90deg, var(--color-status-yellow) 0%, #e0a800 100%);
+    box-shadow: 0 0 20px rgba(255,193,7,0.7);
 }
 
 .status-red {
-    background: linear-gradient(90deg, #dc3545 0%, #c82333 100%);
-    box-shadow: 0 0 20px rgba(220,53,69,0.7); /* Glow merah */
+    background: linear-gradient(90deg, var(--color-status-red) 0%, #c82333 100%);
+    box-shadow: 0 0 20px rgba(220,53,69,0.7);
 }
 
-/* --- Media Queries untuk Responsif (Jika perlu untuk skrin yang lebih kecil) --- */
-@media (max-width: 480px) {
-    #distance-display {
-        font-size: 3.5rem;
-    }
-
-    #instruction-display {
-        font-size: 1.3rem;
-    }
-
-    #navigation-arrow {
-        width: 70px;
-        height: 70px;
+/* --- Media Queries untuk Orientasi Landskap dan Tablet --- */
+@media (orientation: landscape) and (max-height: 500px) {
+    #app-container {
+        max-width: 100%; /* Fill width in landscape */
+        height: 100vh;
+        height: -webkit-fill-available;
     }
 
     .input-section {
-        flex-direction: column; /* Input dan butang disusun menegak */
+        padding: clamp(8px, 2vh, 10px);
+        gap: clamp(5px, 1vh, 8px);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        flex-direction: row; /* Keep input and button side by side */
+    }
+    
+    #destination-input, #start-nav-button {
+        font-size: clamp(0.9rem, 2.5vh, 1rem);
+        padding: clamp(8px, 2vh, 10px) clamp(15px, 4vh, 20px);
+    }
+
+    .navigation-ui {
+        height: 100%; /* Cover more area in landscape */
+        padding-bottom: clamp(15px, 4vw, 20px);
+        justify-content: center; /* Center content vertically more */
+    }
+
+    #navigation-arrow {
+        width: clamp(50px, 10vw, 70px);
+        height: clamp(50px, 10vw, 70px);
+        top: 5%; /* Adjust position for landscape */
+    }
+
+    #distance-display {
+        font-size: clamp(2.5rem, 8vw, 3.5rem);
+    }
+
+    #instruction-display {
+        font-size: clamp(1rem, 3vw, 1.2rem);
+    }
+
+    #gemini-message {
+        font-size: clamp(0.9rem, 2.8vw, 1.1rem);
+        max-width: 70%;
+        padding: clamp(8px, 2vw, 10px) clamp(10px, 3vw, 15px);
+    }
+
+    .status-bar-base {
+        height: clamp(8px, 2vw, 12px);
+    }
+}
+
+/* --- Media Queries untuk Saiz Skrin Lebih Kecil (Telefon Lama/Kecil) --- */
+@media (max-width: 360px) {
+    :root {
+        --font-size-base: 0.9rem;
+    }
+
+    #distance-display {
+        font-size: clamp(3rem, 9vw, var(--font-size-xxxl));
+    }
+
+    #instruction-display {
+        font-size: clamp(1.1rem, 3.5vw, var(--font-size-xl));
+    }
+
+    #navigation-arrow {
+        width: clamp(60px, 16vw, 70px);
+        height: clamp(60px, 16vw, 70px);
+    }
+}
+
+/* --- Media Queries untuk Skrin Desktop/Tablet Lebih Besar --- */
+@media (min-width: 768px) {
+    #app-container {
+        border-radius: 20px; /* Rounded corners for the entire app on larger screens */
+        height: 90vh; /* Adjust height slightly for desktop */
+        margin-top: 5vh; /* Center it vertically */
+    }
+
+    .input-section {
+        padding: 20px;
+        gap: 15px;
+        border-bottom-left-radius: 20px;
+        border-bottom-right-radius: 20px;
+    }
+
+    #destination-input {
+        font-size: 1.1rem;
     }
 
     #start-nav-button {
-        width: 100%;
+        font-size: 1.1rem;
+    }
+
+    .navigation-ui {
+        height: 75%; /* Smaller overlay area on larger screens */
+    }
+
+    #navigation-arrow {
+        width: 100px;
+        height: 100px;
+        top: 10%;
+    }
+
+    #distance-display {
+        font-size: 5rem;
+    }
+
+    #instruction-display {
+        font-size: 1.8rem;
+    }
+
+    #gemini-message {
+        font-size: 1.2rem;
+        max-width: 60%;
+    }
+
+    .status-bar-base {
+        height: 18px;
     }
 }
